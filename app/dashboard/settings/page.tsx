@@ -1,17 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PiHeartLight, PiHeartFill } from "react-icons/pi";
 
 export default function Products() {
     const [products, setProducts] = useState<any[]>([]);
     const [counts, setCounts] = useState<{ [key: number]: number }>({});
+    const [likes, setLikes] = useState<{ [key: number]: boolean }>({});
     const [zoomImage, setZoomImage] = useState<string | null>(null);
+    
 
     useEffect(() => {
         fetch("https://fakestoreapi.com/products")
             .then(res => res.json())
             .then(data => setProducts(data));
     }, []);
+    
 
     useEffect(() => {
         const savedCounts = localStorage.getItem("productCounts");
@@ -23,6 +27,17 @@ export default function Products() {
     useEffect(() => {
         localStorage.setItem("productCounts", JSON.stringify(counts));
     }, [counts]);
+
+    useEffect(() => {
+        const savedLikes = localStorage.getItem("likedProducts");
+        if (savedLikes) {
+            setLikes(JSON.parse(savedLikes));
+        }
+    }, []);
+
+    useEffect(() => {
+        localStorage.setItem("likedProducts", JSON.stringify(likes));
+    }, [likes]);
 
     const handleAdd = (id: number) => {
         setCounts(prev => ({
@@ -38,14 +53,40 @@ export default function Products() {
         }));
     };
 
+   const toggleLike = (id: number) => {
+  setLikes(prev => {
+    const newLikes = { ...prev, [id]: !prev[id] };
+    
+    const savedLiked = JSON.parse(localStorage.getItem("persistedLikedProducts") || "[]");
+    if (newLikes[id] && !savedLiked.includes(id)) {
+      savedLiked.push(id);
+      localStorage.setItem("persistedLikedProducts", JSON.stringify(savedLiked));
+    }
+
+    return newLikes;
+  });
+};
+
+
     return (
         <>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 p-6 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500">
                 {products.map(product => (
                     <div
                         key={product.id}
-                        className="border-[#969696] p-4 rounded shadow flex flex-col bg-white"
+                        className="relative border-[#C4C4C4] p-4 rounded shadow flex flex-col bg-white"
                     >
+                        <button
+                            onClick={() => toggleLike(product.id)}
+                            className="absolute top-2 right-2"
+                        >
+                            {likes[product.id] ? (
+                                <PiHeartFill className="w-6 h-6 text-red-500" />
+                            ) : (
+                                <PiHeartLight className="w-6 h-6 text-gray-400 hover:text-red-400" />
+                            )}
+                        </button>
+
                         <img
                             src={product.image}
                             alt={product.title}
@@ -72,14 +113,14 @@ export default function Products() {
                         <div className="mt-auto flex gap-2 pt-4">
                             <button
                                 onClick={() => handleAdd(product.id)}
-                                className="flex-1 bg-[#ADD8E6] text-black py-1 rounded hover:bg-[#40E0D0] cursor-pointer "
+                                className="flex-1 bg-[#ADD8E6] text-black py-1 rounded hover:bg-[#40E0D0]"
                             >
                                 Add
                             </button>
 
                             <button
                                 onClick={() => handleDelete(product.id)}
-                                className="flex-1 bg-[#FAA0A0] text-black py-1 rounded hover:bg-[#E30B5C] cursor-pointer "
+                                className="flex-1 bg-[#FAA0A0] text-black py-1 rounded hover:bg-[#E30B5C]"
                             >
                                 Delete
                             </button>
@@ -100,6 +141,6 @@ export default function Products() {
                     />
                 </div>
             )}
-        </>
+        </> 
     );
 }
